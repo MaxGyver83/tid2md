@@ -12,7 +12,7 @@ about losing table features (two header rows, captions, cell alignment,
 cell merging, ...), just use the --tables flag.
 """
 
-__version__ = '0.1'
+__version__ = '0.2'
 __author__ = 'Max Schillinger'
 __email__ = 'maxschillinger@web.de'
 
@@ -35,7 +35,7 @@ re_italic = re.compile(r"(\s|\(|^)//([^/]+)//")
 re_bold_italic = re.compile(r"(\s|^)''//([^/']+)//''")
 re_italic_bold = re.compile(r"(\s|^)//''([^/']+)''//")
 re_underscore = re.compile(r"(\s|^)__([^_]+)__")
-re_superscript = re.compile(r"(\W|^)\^\^([^^]+)\^\^")
+re_superscript = re.compile(r"(\W|\d|^)\^\^([^^]+)\^\^")
 re_subscript = re.compile(r"(\s|^),,([^,]+),,")
 re_definition = re.compile(r'^; *([^ ].*)$')
 re_whitespace_only = re.compile(r'^[ \t]*\n$')
