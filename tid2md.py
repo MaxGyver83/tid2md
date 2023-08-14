@@ -12,7 +12,7 @@ about losing table features (two header rows, captions, cell alignment,
 cell merging, ...), just use the --tables flag.
 """
 
-__version__ = '0.2.2'
+__version__ = '0.3.0'
 __author__ = 'Max Schillinger'
 __email__ = 'maxschillinger@web.de'
 
@@ -20,6 +20,7 @@ import sys
 import os
 import re
 import argparse
+import subprocess
 import urllib.parse
 from pathlib import Path
 from typing import TextIO
@@ -30,8 +31,8 @@ re_special_title = re.compile(r'^title: ?\$:/')
 re_external_link = re.compile(r'\[\[(https?://[^\]]+)\]\]')
 re_named_external_link = re.compile(r'\[\[([^|]+)\|([^\]]+)\]\]')
 re_internal_link = re.compile(r'\[\[([^|]+?)\]\]')
-re_image = re.compile(r'\[img \[([^]]+?)\]\]')
-re_url = re.compile(r'(^|[^("])(https?://[\w#/@:._?%=+-]+)($|[^)"])')
+re_image = re.compile(r'\[img( width=(\d+))? ?\[([^]]+?)\]\]')
+re_url = re.compile(r'(^|[^("<])(https?://[\w#/@:._?%=+-]+)($|[^)">])')
 re_bold = re.compile(r"(\s|^)''([^']+)''")
 re_italic = re.compile(r"(\s|\(|^)//([^/]+)//")
 re_bold_italic = re.compile(r"(\s|^)''//([^/']+)//''")
@@ -43,6 +44,8 @@ re_definition = re.compile(r'^; *([^ ].*)$')
 re_whitespace_only = re.compile(r'^[ \t]*\n$')
 re_table = re.compile(r'^\|')
 re_separator_cell = re.compile(r'\|-{0,2}\|')
+
+ALL_TIDDLERS = []
 
 
 class style():
@@ -63,6 +66,21 @@ def warning(text: str):
 
 def info(text: str):
     print(style.BLUE + text + style.RESET)
+
+
+def get_tiddler_list():
+    # this function might slow down this script
+    global ALL_TIDDLERS
+    command = "grep -h '^title: ' *.meta *.tid | sed 's/^title: //'"
+    result = subprocess.check_output(command, shell=True)
+    ALL_TIDDLERS = result.decode().rstrip("\n").split("\n")
+
+
+def is_tiddler(target: str) -> bool:
+    # TODO: working directory might be different than tiddler directory
+    if not ALL_TIDDLERS:
+        get_tiddler_list()
+    return target in ALL_TIDDLERS
 
 
 def write_meta_file(lines: list, meta_file: Path) -> int:
@@ -146,7 +164,16 @@ def write_markdown_file(lines: list, md_file: Path) -> bool:
                     continue
 
                 # images
-                line = re_image.sub(r'<img src="\1">', line)
+                # Skip if image is a tiddler (not a path or URL)
+                m = re_image.search(line)
+                if m:
+                    target = m.groups()[2]
+                    if not is_tiddler(target):
+                        if m.groups()[1]:
+                            line = re_image.sub(r'<img src="\3" width="\2">',
+                                                line)
+                        else:
+                            line = re_image.sub(r'<img src="\3">', line)
 
                 # links
                 # [[text|url]]
