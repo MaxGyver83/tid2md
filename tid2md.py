@@ -12,10 +12,11 @@ about losing table features (two header rows, captions, cell alignment,
 cell merging, ...), just use the --tables flag.
 """
 
-__version__ = '0.2'
+__version__ = '0.2.1'
 __author__ = 'Max Schillinger'
 __email__ = 'maxschillinger@web.de'
 
+import sys
 import os
 import re
 import argparse
@@ -71,23 +72,27 @@ def write_meta_file(lines: list, meta_file: Path) -> int:
         return index
 
     type_defined = False
-    with open(meta_file, 'w') as f:
-        for index, line in enumerate(lines):
-            if re.match(r'[a-z]+:', line):
-                if line.startswith('type:'):
-                    # line = line.replace('type: text/vnd.tiddlywiki',
-                    #                     'type: text/x-markdown')
-                    line = 'type: text/x-markdown\n'
-                    type_defined = True
-                f.write(line)
-            else:
-                if not type_defined:
-                    # add type property
-                    line = 'type: text/x-markdown\n'
+    try:
+        with open(meta_file, 'w') as f:
+            for index, line in enumerate(lines):
+                if re.match(r'[a-z]+:', line):
+                    if line.startswith('type:'):
+                        # line = line.replace('type: text/vnd.tiddlywiki',
+                        #                     'type: text/x-markdown')
+                        line = 'type: text/x-markdown\n'
+                        type_defined = True
                     f.write(line)
-                break
-    # TODO: Write meta file (with at least `type:`) when .tid file
-    # doesn't contain a header?
+                else:
+                    if not type_defined:
+                        # add type property
+                        line = 'type: text/x-markdown\n'
+                        f.write(line)
+                    break
+        # TODO: Write meta file (with at least `type:`) when .tid file
+        # doesn't contain a header?
+    except PermissionError as e:
+        error(str(e))
+        sys.exit(1)
 
     # skip empty line after header
     if lines[index] == '\n':
@@ -315,6 +320,10 @@ def main(tid_files: list = None, update: bool = False,
     skip_count = 0
     migrate_count = 0
     os.system("")  # Enables color output on Windows 10 (not tested)
+
+    if output_directory and not output_directory.is_dir():
+        error(f"The output directory '{output_directory}' does not exist!")
+        sys.exit(1)
 
     for tid_file in tid_files:
         if tid_file.name.startswith('$__'):
