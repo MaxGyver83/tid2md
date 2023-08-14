@@ -12,7 +12,7 @@ about losing table features (two header rows, captions, cell alignment,
 cell merging, ...), just use the --tables flag.
 """
 
-__version__ = '0.2.1'
+__version__ = '0.2.2'
 __author__ = 'Max Schillinger'
 __email__ = 'maxschillinger@web.de'
 
@@ -27,7 +27,8 @@ from typing import TextIO
 
 re_special_tag = re.compile(r'^tags:.*\$:/tags/')
 re_special_title = re.compile(r'^title: ?\$:/')
-re_external_link = re.compile(r'\[\[([^|]+)\|([^\]]+)\]\]')
+re_external_link = re.compile(r'\[\[(https?://[^\]]+)\]\]')
+re_named_external_link = re.compile(r'\[\[([^|]+)\|([^\]]+)\]\]')
 re_internal_link = re.compile(r'\[\[([^|]+?)\]\]')
 re_image = re.compile(r'\[img \[([^]]+?)\]\]')
 re_url = re.compile(r'(^|[^("])(https?://[\w#/@:._?%=+-]+)($|[^)"])')
@@ -149,7 +150,9 @@ def write_markdown_file(lines: list, md_file: Path) -> bool:
 
                 # links
                 # [[text|url]]
-                line = re_external_link.sub(r'[\1](\2)', line)
+                line = re_named_external_link.sub(r'[\1](\2)', line)
+                # [[url]]
+                line = re_external_link.sub(r'<\1>', line)
                 # [[Another tiddler]] → [Another tiddler](#Another%20tiddler)
                 line = re_internal_link.sub(
                     lambda m: (
