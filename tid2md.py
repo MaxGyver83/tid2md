@@ -24,6 +24,7 @@ import subprocess
 import urllib.parse
 from pathlib import Path
 from typing import TextIO
+from glob import glob
 
 
 re_special_tag = re.compile(r'^tags:.*\$:/tags/')
@@ -92,7 +93,7 @@ def write_meta_file(lines: list, meta_file: Path) -> int:
 
     type_defined = False
     try:
-        with open(meta_file, 'w') as f:
+        with open(meta_file, 'w', encoding='UTF-8') as f:
             for index, line in enumerate(lines):
                 if re.match(r'[a-z]+:', line):
                     if line.startswith('type:'):
@@ -128,7 +129,7 @@ def write(f: TextIO, line: str, quoted: bool = False):
 def write_markdown_file(lines: list, md_file: Path) -> bool:
     try:
         print(md_file.name)
-        with open(md_file, 'w') as f:
+        with open(md_file, 'w', encoding='UTF-8') as f:
             codeblock = False
             blockquote = False
             table = False
@@ -308,7 +309,8 @@ def migrate_tid_file(
         return False
 
     try:
-        with open(tid_file) as f:
+        print("trying to open", tid_file)
+        with open(tid_file, encoding='UTF-8') as f:
             lines = f.readlines()
     except IOError as error:
         error(err)
@@ -344,7 +346,7 @@ def migrate_tid_file(
     return result
 
 
-def main(tid_files: list = None, update: bool = False,
+def main(tid_file_paths: list = None, update: bool = False,
          delete_input: bool = False, output_directory: Path = None,
          tables: bool = False):
     skip_count = 0
@@ -354,18 +356,25 @@ def main(tid_files: list = None, update: bool = False,
     if output_directory and not output_directory.is_dir():
         error(f"The output directory '{output_directory}' does not exist!")
         sys.exit(1)
+        
+    tid_files = []
+    for path in tid_file_paths:
+        for file in glob(path):
+            tid_files.append(file)
 
     for tid_file in tid_files:
-        if tid_file.name.startswith('$__'):
-            warning(f"'{tid_file.name}' looks like a system tiddler. "
+        if tid_file.startswith('$__'):
+            warning(f"'{tid_file}' looks like a system tiddler. "
                     "Skipping it.")
             skip_count += 1
             continue
-        if migrate_tid_file(tid_file, update, output_directory, tables):
+            
+        tid_path = Path(tid_file)
+        if migrate_tid_file(tid_path, update, output_directory, tables):
             # TODO: Delete if migration was skipped because of existing
             # markdown file?
             if delete_input:
-                tid_file.unlink()
+                tid_path.unlink()
             migrate_count += 1
         else:
             skip_count += 1
@@ -389,7 +398,6 @@ if __name__ == '__main__':
                         default=None,
                         help="Write markdown files in this directory.")
     parser.add_argument("files", nargs='+',
-                        type=Path,
                         help=".tid files to migrate to Markdown.")
     args = parser.parse_args()
 
