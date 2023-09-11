@@ -309,7 +309,6 @@ def migrate_tid_file(
         return False
 
     try:
-        print("trying to open", tid_file)
         with open(tid_file, encoding='UTF-8') as f:
             lines = f.readlines()
     except IOError as error:
