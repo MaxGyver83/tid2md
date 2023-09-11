@@ -13,7 +13,7 @@ cell merging, ...), just use the --tables flag.
 """
 
 __version__ = '0.3.0'
-__author__ = 'Max Schillinger'
+__author__ = 'Max Schillinger'  # Additional fixes by Lumos
 __email__ = 'maxschillinger@web.de'
 
 import sys
@@ -29,7 +29,8 @@ from typing import TextIO
 re_special_tag = re.compile(r'^tags:.*\$:/tags/')
 re_special_title = re.compile(r'^title: ?\$:/')
 re_external_link = re.compile(r'\[\[(https?://[^\]]+)\]\]')
-re_named_external_link = re.compile(r'\[\[([^|]+)\|([^\]]+)\]\]')
+re_named_external_link = re.compile(r'\[\[([^|\]]+)\|(https?://[^\]]+)\]\]')
+re_named_internal_link = re.compile(r'\[\[([^|\]]+)\|([^\]]+)\]\]')
 re_internal_link = re.compile(r'\[\[([^|]+?)\]\]')
 re_image = re.compile(r'\[img( width=(\d+))? ?\[([^]]+?)\]\]')
 re_url = re.compile(r'(^|[^("<])(https?://[\w#/@:._?%=+-]+)($|[^)">])')
@@ -188,6 +189,12 @@ def write_markdown_file(lines: list, md_file: Path) -> bool:
                     line
                 )
                 # [[internal link|Tiddler]] → [internal link](#Tiddler)
+                line = re_named_internal_link.sub(
+                    lambda m: (
+                        f'[{m.group(1)}](#{urllib.parse.quote(m.group(2))})'
+                    ),
+                    line
+                )
                 # plain url
                 line = re_url.sub(r'\1<\2>\3', line)
 
