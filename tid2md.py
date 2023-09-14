@@ -137,7 +137,7 @@ def parse_link(match: re.Match, use_angles: bool) -> str:
     return f"[{label}](#{urllib.parse.quote(target)})"
 
 
-def write_markdown_file(lines: list, md_file: Path) -> bool:
+def write_markdown_file(lines: list, md_file: Path, use_angles: bool) -> bool:
     try:
         print(md_file.name)
         with open(md_file, 'w', encoding='UTF-8') as f:
@@ -300,7 +300,8 @@ def migrate_tid_file(
         tid_file: Path = None,
         update: bool = False,
         output_directory: Path = None,
-        tables: bool = False) -> bool:
+        tables: bool = False,
+        use_angles: bool = False) -> bool:
     if output_directory:
         meta_file = output_directory / tid_file.name
     else:
@@ -343,7 +344,7 @@ def migrate_tid_file(
 
     index_content = write_meta_file(lines, meta_file)
 
-    result = write_markdown_file(lines[index_content:], md_file)
+    result = write_markdown_file(lines[index_content:], md_file, use_angles)
     if result is False:
         meta_file.unlink()
         md_file.unlink()
@@ -353,7 +354,7 @@ def migrate_tid_file(
 
 def main(tid_file_paths: list = None, update: bool = False,
          delete_input: bool = False, output_directory: Path = None,
-         tables: bool = False):
+         tables: bool = False, use_angles: bool = False):
     skip_count = 0
     migrate_count = 0
     os.system("")  # Enables color output on Windows 10 (not tested)
@@ -375,7 +376,8 @@ def main(tid_file_paths: list = None, update: bool = False,
             continue
             
         tid_path = Path(tid_file)
-        if migrate_tid_file(tid_path, update, output_directory, tables):
+        if migrate_tid_file(tid_path, update, output_directory, tables, 
+                            use_angles):
             # TODO: Delete if migration was skipped because of existing
             # markdown file?
             if delete_input:
@@ -404,7 +406,13 @@ if __name__ == '__main__':
                         help="Write markdown files in this directory.")
     parser.add_argument("files", nargs='+',
                         help=".tid files to migrate to Markdown.")
+    parser.add_argument("-a", "--angle-brackets-only", action='store_true', 
+                        help='If set, internal links will be surrounded with '
+                        '<> angle brackets instead of being encoded as URLs. '
+                        'For example, "[[target tiddler]]" will produce '
+                        '"[](<#target tiddler>)" instead of "[target tiddler]'
+                        '(#target%%20tiddler)"')
     args = parser.parse_args()
 
     main(args.files, args.update, args.delete, args.output_directory,
-         args.tables)
+         args.tables, args.angle_brackets_only)
