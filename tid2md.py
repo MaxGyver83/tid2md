@@ -123,7 +123,7 @@ def write(f: TextIO, line: str, quoted: bool = False):
     f.write(line)
     
     
-def parse_link(match: re.Match):
+def parse_link(match: re.Match) -> str:
     label = match.group(1)
     is_named = match.group(2) is not None
     target = match.group(2) if is_named else match.group(1)
