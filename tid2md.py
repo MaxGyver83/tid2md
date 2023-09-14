@@ -28,10 +28,7 @@ from typing import TextIO
 
 re_special_tag = re.compile(r'^tags:.*\$:/tags/')
 re_special_title = re.compile(r'^title: ?\$:/')
-re_external_link = re.compile(r'\[\[(https?://[^\]]+)\]\]')
-re_named_external_link = re.compile(r'\[\[([^|\]]+)\|(https?://[^\]]+)\]\]')
-re_named_internal_link = re.compile(r'\[\[([^|\]]+)\|([^\]]+)\]\]')
-re_internal_link = re.compile(r'\[\[([^|]+?)\]\]')
+re_link = re.compile(r'\[\[(.+?)(?:\]\]|\|(.+?)\]\])')
 re_image = re.compile(r'\[img( width=(\d+))? ?\[([^]]+?)\]\]')
 re_url = re.compile(r'(^|[^("<])(https?://[\w#/@:._?%=+-]+)($|[^)">])')
 re_bold = re.compile(r"(\s|^)''([^']+)''")
@@ -124,6 +121,19 @@ def write(f: TextIO, line: str, quoted: bool = False):
     if quoted:
         line = f'> {line}'
     f.write(line)
+    
+    
+def parse_link(match):
+    label = match.group(1)
+    is_named = match.group(2) is not None
+    target = match.group(2) if is_named else match.group(1)
+    is_external = "://" in target or target.startswith("www.")
+    
+    if is_external:
+        return f"[{label}]({target})" if is_named else f"<{target}>"
+    else:
+        quoted = urllib.parse.quote(target)
+        return f"[{label}](#{quoted})"
 
 
 def write_markdown_file(lines: list, md_file: Path) -> bool:
@@ -176,25 +186,14 @@ def write_markdown_file(lines: list, md_file: Path) -> bool:
                         else:
                             line = re_image.sub(r'<img src="\3">', line)
 
-                # links
-                # [[text|url]]
-                line = re_named_external_link.sub(r'[\1](\2)', line)
-                # [[url]]
-                line = re_external_link.sub(r'<\1>', line)
+                # Internal links
                 # [[Another tiddler]] → [Another tiddler](#Another%20tiddler)
-                line = re_internal_link.sub(
-                    lambda m: (
-                        f'[{m.group(1)}](#{urllib.parse.quote(m.group(1))})'
-                    ),
-                    line
-                )
-                # [[internal link|Tiddler]] → [internal link](#Tiddler)
-                line = re_named_internal_link.sub(
-                    lambda m: (
-                        f'[{m.group(1)}](#{urllib.parse.quote(m.group(2))})'
-                    ),
-                    line
-                )
+                # [[internal link|Tiddler target]] → [internal link](#Tiddler%20target)
+                # External links
+                # [[text|url]] → [text](url)
+                # [[url]] → <url>
+                line = re_link.sub(parse_link, line)
+
                 # plain url
                 line = re_url.sub(r'\1<\2>\3', line)
 
