@@ -318,7 +318,7 @@ def migrate_tid_file(
     try:
         with open(tid_file, encoding='UTF-8') as f:
             lines = f.readlines()
-    except IOError as error:
+    except IOError as err:
         error(err)
         return False
 
