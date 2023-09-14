@@ -127,7 +127,7 @@ def parse_link(match):
     label = match.group(1)
     is_named = match.group(2) is not None
     target = match.group(2) if is_named else match.group(1)
-    is_external = "://" in target or target.startswith("www.")
+    is_external = "://" in target
     
     if is_external:
         return f"[{label}]({target})" if is_named else f"<{target}>"
