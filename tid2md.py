@@ -124,17 +124,17 @@ def write(f: TextIO, line: str, quoted: bool = False):
     f.write(line)
     
     
-def parse_link(match: re.Match) -> str:
+def parse_link(match: re.Match, use_angles: bool) -> str:
     label = match.group(1)
-    is_named = match.group(2) is not None
-    target = match.group(2) if is_named else match.group(1)
-    is_external = "://" in target
+    target = match.group(2) if match.group(2) else match.group(1)
+
+    if "://" in target:
+        return f"[{label}]({target})" if match.group(2) else f"<{target}>"
     
-    if is_external:
-        return f"[{label}]({target})" if is_named else f"<{target}>"
-    else:
-        quoted = urllib.parse.quote(target)
-        return f"[{label}](#{quoted})"
+    if use_angles:
+        return f"[{label if match.group(2) else ''}](<#{target}>)"
+    
+    return f"[{label}](#{urllib.parse.quote(target)})"
 
 
 def write_markdown_file(lines: list, md_file: Path) -> bool:
@@ -193,7 +193,7 @@ def write_markdown_file(lines: list, md_file: Path) -> bool:
                 # External links
                 # [[text|url]] → [text](url)
                 # [[url]] → <url>
-                line = re_link.sub(parse_link, line)
+                line = re_link.sub(lambda m: parse_link(m, use_angles), line)
 
                 # plain url
                 line = re_url.sub(r'\1<\2>\3', line)
