@@ -122,18 +122,18 @@ def write(f: TextIO, line: str, quoted: bool = False):
     if quoted:
         line = f'> {line}'
     f.write(line)
-    
-    
+
+
 def parse_link(match: re.Match, use_angles: bool) -> str:
     label = match.group(1)
     target = match.group(2) if match.group(2) else match.group(1)
 
     if "://" in target:
         return f"[{label}]({target})" if match.group(2) else f"<{target}>"
-    
+
     if use_angles:
         return f"[{label if match.group(2) else ''}](<#{target}>)"
-    
+
     return f"[{label}](#{urllib.parse.quote(target)})"
 
 
@@ -362,7 +362,7 @@ def main(tid_file_paths: list = None, update: bool = False,
     if output_directory and not output_directory.is_dir():
         error(f"The output directory '{output_directory}' does not exist!")
         sys.exit(1)
-        
+
     tid_files = []
     for path in tid_file_paths:
         for file in glob(path):
@@ -374,9 +374,9 @@ def main(tid_file_paths: list = None, update: bool = False,
                     "Skipping it.")
             skip_count += 1
             continue
-            
+
         tid_path = Path(tid_file)
-        if migrate_tid_file(tid_path, update, output_directory, tables, 
+        if migrate_tid_file(tid_path, update, output_directory, tables,
                             use_angles):
             # TODO: Delete if migration was skipped because of existing
             # markdown file?
@@ -406,7 +406,7 @@ if __name__ == '__main__':
                         help="Write markdown files in this directory.")
     parser.add_argument("files", nargs='+',
                         help=".tid files to migrate to Markdown.")
-    parser.add_argument("-a", "--angle-brackets-only", action='store_true', 
+    parser.add_argument("-a", "--angle-brackets-only", action="store_true",
                         help='If set, internal links will be surrounded with '
                         '<> angle brackets instead of being encoded as URLs. '
                         'For example, "[[target tiddler]]" will produce '
