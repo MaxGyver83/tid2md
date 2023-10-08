@@ -12,7 +12,7 @@ about losing table features (two header rows, captions, cell alignment,
 cell merging, ...), just use the --tables flag.
 """
 
-__version__ = '0.3.0'
+__version__ = '0.3.1'
 __author__ = 'Max Schillinger'  # Additional fixes by Lumos
 __email__ = 'maxschillinger@web.de'
 
@@ -39,6 +39,7 @@ re_italic_bold = re.compile(r"(\s|^)//''([^/']+)''//")
 re_underscore = re.compile(r"(\s|^)__([^_]+)__")
 re_superscript = re.compile(r"(\W|\d|^)\^\^([^^]+)\^\^")
 re_subscript = re.compile(r"(\s|^),,([^,]+),,")
+re_heading = re.compile(r'^!+')
 re_definition = re.compile(r'^; *([^ ].*)$')
 re_whitespace_only = re.compile(r'^[ \t]*\n$')
 re_table = re.compile(r'^\|')
@@ -236,12 +237,7 @@ def write_markdown_file(lines: list, md_file: Path, use_angles: bool) -> bool:
 
                 # headers (need to be migrated after lists because a Markdown
                 # header looks like a WikiText numbered list item)
-                i = 0
-                while i < len(line) and line[i] == '!':
-                    i += 1
-                if i > 0:
-                    line = line.replace('!', '#', i)
-                    line = re.sub(r'^(#+)([^#\n ])', r'\1 \2', line)
+                line = re_heading.sub(lambda match: '#' * len(match.group()), line)
 
                 # definitions ;xxx :yyy
                 line = re_definition.sub(r'**\1**', line)
