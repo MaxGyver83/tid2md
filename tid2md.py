@@ -12,7 +12,7 @@ about losing table features (two header rows, captions, cell alignment,
 cell merging, ...), just use the --tables flag.
 """
 
-__version__ = '0.3.1'
+__version__ = '0.3.2'
 __author__ = 'Max Schillinger'  # Additional fixes by Lumos
 __email__ = 'maxschillinger@web.de'
 
@@ -109,8 +109,8 @@ def write_meta_file(lines: list, meta_file: Path) -> int:
                     break
         # TODO: Write meta file (with at least `type:`) when .tid file
         # doesn't contain a header?
-    except PermissionError as e:
-        error(str(e))
+    except PermissionError as err:
+        error(str(err))
         sys.exit(1)
 
     # skip empty line after header
@@ -287,7 +287,7 @@ def write_markdown_file(lines: list, md_file: Path, use_angles: bool) -> bool:
 
                 write(f, line, blockquote)
     except IOError as err:
-        error(err)
+        error(str(err))
         return False
     return True
 
@@ -314,8 +314,8 @@ def migrate_tid_file(
     try:
         with open(tid_file, encoding='UTF-8') as f:
             lines = f.readlines()
-    except IOError as err:
-        error(err)
+    except (IOError, UnicodeDecodeError) as err:
+        error(f"{tid_file.name}:\n  {err}\nSkipping it.")
         return False
 
     if lines[0].startswith('color:'):
